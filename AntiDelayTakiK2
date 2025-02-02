@@ -1,0 +1,81 @@
+game.StarterGui:SetCore("SendNotification",{Title="By RoKami and luzi.",Text="Equip taki to turn ON AntiDelay, unequip to turn it OFF",Duration= 4 });
+local Client = game:GetService("Players").LocalPlayer
+local UIS = game:GetService("UserInputService")
+local RS = game:GetService("RunService")
+local Players = game:GetService("Players")
+local Stats = game:GetService("Stats")
+repeat wait(0.5) until Client:FindFirstChild("PlayerFolder")
+local PlrFolder = Client:WaitForChild("PlayerFolder")
+local IsSprinting = PlrFolder:WaitForChild("IsSprinting")
+local NoDelay_Debounce = true
+local NoDelay = Client:WaitForChild("PlayerFolder"):WaitForChild("CanAct")
+local T_B = Client:WaitForChild("PlayerFolder"):WaitForChild("IsBlocking")
+local E_D = Client:WaitForChild("PlayerFolder"):WaitForChild("Special1CD")
+local R_D = Client:WaitForChild("PlayerFolder"):WaitForChild("Special2CD")
+local F_D = Client:WaitForChild("PlayerFolder"):WaitForChild("Special3CD")
+local G_Debounce = false
+local LookAtMouse = Client:WaitForChild("PlayerFolder"):WaitForChild("LookAtMouse")
+local function getPing()
+    local networkStats = Stats.Network.ServerStatsItem["Data Ping"]
+    return networkStats:GetValue()
+end
+local CO = coroutine.wrap(function()
+    RS.RenderStepped:Connect(function(deltaTime)
+        local Char = Client.Character or Client.CharacterAdded:Wait()
+        if IsSprinting.Value == false then return nil end
+        if Char:FindFirstChild("HumanoidRootPart") then
+            if NoDelay_Debounce == true and T_B.Value == false then
+                NoDelay.Value = true
+            end
+            if Char:WaitForChild("HumanoidRootPart"):FindFirstChild("Dash") then 
+                local minPing, maxPing = 30, 100
+                local minValue, maxValue = 4500, 5000
+
+                local clampedPing = math.clamp(getPing(), minPing, maxPing)
+
+                Char:WaitForChild("HumanoidRootPart"):WaitForChild("Dash").P = minValue + ((clampedPing - minPing) / (maxPing - minPing)) * (maxValue - minValue)
+            end
+        end
+    end)
+end)
+E_D.Changed:Connect(function(newValue)
+    if newValue == "DownTime" then
+        NoDelay_Debounce = "E"
+    elseif newValue == "Recharge" and NoDelay_Debounce == "E" then
+        --wait(0.1)
+        NoDelay_Debounce = true
+    end
+end)
+R_D.Changed:Connect(function(newValue)
+    if newValue == "DownTime" then
+        NoDelay_Debounce = "R"
+    elseif newValue == "Recharge" and NoDelay_Debounce == "R" then
+        NoDelay_Debounce = true
+    end
+end)
+F_D.Changed:Connect(function(newValue)
+    if newValue == "DownTime" then
+        NoDelay_Debounce = "F"
+    elseif newValue == "Recharge" and NoDelay_Debounce == "F" then
+        NoDelay_Debounce = true
+    end
+end)
+UIS.InputBegan:Connect(function(input, gameProcessedEvent)
+    if input.KeyCode == Enum.KeyCode.G and not gameProcessedEvent then
+        local G_D = Client:WaitForChild("PlayerGui"):WaitForChild("HUD"):WaitForChild("MainFrame"):WaitForChild("UniqueCDs"):FindFirstChild("Spec")
+        if G_D == nil and G_Debounce == false then
+            G_Debounce = true
+            NoDelay_Debounce = "G"
+            Wait(0.15)
+            NoDelay.Value = false
+            Wait(1)
+            NoDelay_Debounce = true
+            Client:WaitForChild("PlayerGui"):WaitForChild("HUD"):WaitForChild("MainFrame"):WaitForChild("UniqueCDs"):WaitForChild("Spec").AncestryChanged:Connect(function(_, parent)
+                if not parent then
+                    G_Debounce = false
+                end
+            end)
+        end
+    end
+end)
+CO()
